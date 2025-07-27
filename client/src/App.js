@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 
 function App() {
+  const [theme, setTheme] = useState('light');
   const [messages, setMessages] = useState([
     {
       sender: "bot",
@@ -11,7 +12,6 @@ function App() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
 
-  // Scroll to newest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -34,19 +34,32 @@ function App() {
     setInput("");
   }
 
+  function toggleTheme() {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }
+
   return (
-    <div className="container">
+    <div className={`container ${theme}`}>
       <div className="chatbox">
+        <div className="header">
+          <div className="title">Feelsync</div>
+          <label className="theme-switch">
+            <input
+              type="checkbox"
+              checked={theme === "dark"}
+              onChange={toggleTheme}
+            />
+            <span className="slider">
+              {theme === 'light' ? '🌙' : '☀️'}
+            </span>
+          </label>
+        </div>
         <div className="avatar-bounce">
           <span className="avatar">🤖</span>
         </div>
-        <div className="title">Feelsync</div>
         <div className="messages">
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`msg ${msg.sender === "user" ? "user" : "bot"}`}
-            >
+            <div key={i} className={`msg ${msg.sender === "user" ? "user" : "bot"}`}>
               <span>{msg.text}</span>
             </div>
           ))}
