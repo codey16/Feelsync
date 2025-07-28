@@ -37,23 +37,39 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend() {
-    if (!input.trim()) return;
-    setMessages([
-      ...messages,
-      { sender: "user", text: input }
+async function handleSend() {
+  if (!input.trim()) return;
+  const userMessage = input;
+  setInput("");
+
+  // Add user's message and "bot is thinking..."
+  setMessages(msgs => [
+    ...msgs,
+    { sender: "user", text: userMessage },
+    { sender: "bot", text: "🤔 Thinking..." }
+  ]);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage })
+    });
+    const data = await res.json();
+
+    // Replace "bot is thinking..." with actual reply
+    setMessages(msgs => [
+      ...msgs.slice(0, -1),
+      { sender: "bot", text: data.reply }
     ]);
-    setTimeout(() => {
-      setMessages(msgs => [
-        ...msgs,
-        {
-          sender: "bot",
-          text: "✨ Great mood! (We'll connect the backend soon for real suggestions!)"
-        }
-      ]);
-    }, 750);
-    setInput("");
+  } catch (err) {
+    setMessages(msgs => [
+      ...msgs.slice(0, -1),
+      { sender: "bot", text: "⚠️ Sorry, server error!" }
+    ]);
   }
+}
+
 
   function toggleTheme() {
     setTheme(theme === 'light' ? 'dark' : 'light');
