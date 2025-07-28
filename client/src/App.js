@@ -10,7 +10,28 @@ function App() {
     }
   ]);
   const [input, setInput] = useState("");
+  const [listening, setListening] = useState(false);
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Setup SpeechRecognition instance
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = event => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setListening(false);
+      };
+      recognitionRef.current.onend = () => setListening(false);
+      recognitionRef.current.onerror = () => setListening(false);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,20 +59,28 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   }
 
+  function handleMic() {
+    if (recognitionRef.current && !listening) {
+      setListening(true);
+      recognitionRef.current.start();
+    } else if (recognitionRef.current && listening) {
+      recognitionRef.current.stop();
+      setListening(false);
+    }
+  }
+
   return (
     <div className={`container ${theme}`}>
       <div className="chatbox">
         <div className="header">
           <div className="title">Feelsync</div>
-          <label className="theme-switch">
+          <label className="toggle-switch">
             <input
               type="checkbox"
               checked={theme === "dark"}
               onChange={toggleTheme}
             />
-            <span className="slider">
-              {theme === 'light' ? '🌙' : '☀️'}
-            </span>
+            <span className="slider"></span>
           </label>
         </div>
         <div className="avatar-bounce">
@@ -65,19 +94,31 @@ function App() {
           ))}
           <div ref={messagesEndRef} />
         </div>
-        <div className="input-area">
+        <div className="input-area flex-bar">
+          <button
+            className={`mic-btn${listening ? " listening" : ""}`}
+            onClick={handleMic}
+            aria-label={listening ? "Stop recording" : "Start recording"}
+            tabIndex="0"
+            type="button"
+          >
+            <span role="img" aria-label="mic">
+              {listening ? "🎤" : "🎙️"}
+            </span>
+          </button>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSend()}
-            placeholder="Type your mood (or use the mic)..."
+            placeholder="Type your mood or speak…"
             className="chat-input"
             autoFocus
           />
-          <button className="send-btn" onClick={handleSend}>
+          <button className="send-btn" onClick={handleSend} aria-label="Send" tabIndex="0" type="button">
             ➤
           </button>
         </div>
+
         <div className="subtle-tip">
           Try saying <span className="hint">"I'm on top of the world!"</span> or <span className="hint">"Feeling mellow"</span>
         </div>
